@@ -61,9 +61,10 @@ STICK_RADIUS           = 0.008
 STICK_LENGTH           = 0.10
 STICK_OFFSET_Z_FROM_TCP = -0.05   # stick center is 0.05 m behind TCP in local z
 
-BLOCK_COLOR = np.array([0.20, 0.47, 0.96])
-HAND_COLOR  = np.array([0.91, 0.47, 0.10])
-GHOST_COLOR = np.array([0.20, 0.95, 0.60])
+# High-contrast colors for point cloud visualization
+BLOCK_COLOR = np.array([0.0, 0.35, 1.0])   # bright blue
+HAND_COLOR  = np.array([1.0, 0.2, 0.0])     # bright red-orange
+GHOST_COLOR = np.array([0.0, 1.0, 0.4])     # bright lime green
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -222,20 +223,20 @@ def render_frame_gif(frame: dict, step: int, elev: float, azim: float,
     ax  = fig.add_subplot(111, projection="3d")
 
     b = frame["block"]
-    ax.scatter(b[:,0], b[:,1], b[:,2], s=1.2,
+    ax.scatter(b[:,0], b[:,1], b[:,2], s=2.0,
                c=[BLOCK_COLOR.tolist()], label="block",
-               depthshade=True, alpha=0.6)
+               depthshade=True, alpha=1.0)
 
     h = frame["hand_now"]
-    ax.scatter(h[:,0], h[:,1], h[:,2], s=2.5,
+    ax.scatter(h[:,0], h[:,1], h[:,2], s=3.5,
                c=[HAND_COLOR.tolist()], label="gripper (now)",
-               depthshade=True, alpha=0.9)
+               depthshade=True, alpha=1.0)
 
     if show_ghost:
         g = frame["hand_future"]
-        ax.scatter(g[:,0], g[:,1], g[:,2], s=2.5,
+        ax.scatter(g[:,0], g[:,1], g[:,2], s=3.5,
                    c=[GHOST_COLOR.tolist()], label="gripper (action target)",
-                   depthshade=True, alpha=ghost_alpha)
+                   depthshade=True, alpha=max(ghost_alpha, 0.6))
 
     ax.view_init(elev=elev, azim=azim)
     for i, (lo, hi) in enumerate(lims):

@@ -1,0 +1,7 @@
+[submodule "submodules/dexhier"]
+	path = submodules/dexhier
+	url = git@github.com:YingYuan0414/DexHier.git
+	branch = pretrain
+[submodule "submodules/mctd"]
+	path = submodules/mctd
+	url = git@github.com:amburger66/mctd.git
