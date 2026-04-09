@@ -25,6 +25,8 @@ Standardised output dict
     target_xy            (2,) or None   world-frame target XY from all_targets
     tcp_positions        (T, 3)    full gripper centroid trajectory, world frame
     block_positions      (T, 3)    full block position trajectory, world frame
+    hand_particles_world    (T, n_hand, 3)  all predicted hand particles in world frame
+    hand_template_centered  (n_hand, 3)     hand particle template centred at origin (frame-0 shape)
 
 Modes
 -----
@@ -118,6 +120,8 @@ def _estimate_yaw_from_particles(centered_particles: np.ndarray,
         residuals[i] = np.mean((max_abs - half_size) ** 2)
 
     return float(angles[int(residuals.argmin())])
+
+
 # ─────────────────────────────────────────────────────────────────────────────
 # The block is always placed at this position in simulation regardless of what
 # absolute coordinates appear in the prediction frame.  Only the *relative*
@@ -163,6 +167,8 @@ def convert_from_3D(prediction_dict: dict) -> dict:
         target_xy            (2,) or None
         tcp_positions        (T, 3)     full TCP trajectory, world frame (diagnostic)
         block_positions      (T, 3)     full block trajectory, world frame (diagnostic)
+        hand_particles_world    (T, n_hand, 3)  all predicted hand particles in world frame
+        hand_template_centered  (n_hand, 3)     frame-0 hand shape centred at origin
 
     Coordinate mapping
     ------------------
@@ -200,27 +206,16 @@ def convert_from_3D(prediction_dict: dict) -> dict:
     tcp_xy_pred    = hand_centroids[:, :2]               # (T, 2)
 
     # ── Block: rotation estimation ────────────────────────────────────────────
-    # Center each frame's particles on their own centroid.  Kabsch across
-    # frames is valid here because particle indices are consistent over time
-    # (the model tracks the same particles, not re-samples each frame).
     block_centroids = block_particles.mean(axis=1, keepdims=True)   # (T, 1, 3)
     block_centred   = block_particles - block_centroids             # (T, n_block, 3)
 
-    # Absolute yaw at t=0: grid-search minimising the cube-surface residual.
-    # This avoids the correspondence problem entirely — no template needed.
     yaw_0 = _estimate_yaw_from_particles(block_centred[0], half_size=0.025)
     c0, s0 = np.cos(yaw_0), np.sin(yaw_0)
     R0 = np.array([[c0, -s0, 0.0],
                    [s0,  c0, 0.0],
-                   [0.0, 0.0, 1.0]], dtype=np.float32)   # Z-rotation only
+                   [0.0, 0.0, 1.0]], dtype=np.float32)
 
-    # Relative rotation of each frame w.r.t. frame 0 via Kabsch.
-    # Correspondence is valid because particle i is the same object point at
-    # every timestep, so aligning frame-0 particles to frame-t particles gives
-    # the true rigid-body rotation between those two states.
     Rs_rel, _ = kabsch_batch(block_centred[0], block_centred)       # (T, 3, 3)
-
-    # Absolute rotation at each frame: R_abs[t] = R_rel[t] @ R0
     Rs_abs = np.stack([Rs_rel[t] @ R0 for t in range(T)])           # (T, 3, 3)
 
     block_pos_pred = block_centroids[:, 0, :]                       # (T, 3)
@@ -233,40 +228,125 @@ def convert_from_3D(prediction_dict: dict) -> dict:
     block_positions_world = block_pos_pred  + world_offset        # (T, 3)
     tcp_xy_world          = tcp_positions_world[:, :2]            # (T, 2)
 
+    # ── Hand particle arrays in world frame ───────────────────────────────────
+    # hand_particles_world[t] = all gripper particle positions at step t,
+    # shifted to the canonical world frame.  Shape: (T, n_hand, 3).
+    hand_particles_world = (hand_particles + world_offset).astype(np.float32)
+
+    # Centred template: frame-0 hand shape with zero mean.
+    # Used by playback_floating.py to reconstruct actual gripper point clouds
+    # from the simulation's actual centroid positions (no rotation for floating
+    # gripper, so the shape never changes).
+    hand_template_centered = (
+        hand_particles[0] - hand_particles[0].mean(axis=0)
+    ).astype(np.float32)   # (n_hand, 3)
+    
+    block_particles_world = (block_particles + world_offset).astype(np.float32)
+
+    # Centred template: frame-0 block shape with zero mean.
+    # Used to reconstruct the GT block clouds during simulation replay.
+    block_template_centered = (block_centred[0] @ R0).astype(np.float32)
+
     # ── Initial state ─────────────────────────────────────────────────────────
-    initial_block_pos  = CANONICAL_BLOCK_POS.copy()               # (3,)
-    initial_block_quat = block_quats[0].copy()    # absolute rotation from canonical template fit
-    initial_gripper_xy = tcp_xy_world[0].copy()                   # (2,)
+    initial_block_pos  = CANONICAL_BLOCK_POS.copy()
+    initial_block_quat = block_quats[0].copy()
+    initial_gripper_xy = tcp_xy_world[0].copy()
 
     # ── Actions and aligned predictions ──────────────────────────────────────
     predicted_actions    = np.diff(tcp_xy_world, axis=0).astype(np.float32)      # (T-1, 2)
     predicted_block_pos  = block_positions_world[1:].astype(np.float32)          # (T-1, 3)
     predicted_block_quat = block_quats[1:].astype(np.float32)                    # (T-1, 4)
 
-    # ── Target extraction ─────────────────────────────────────────────────────
+    # ── Target extraction (Revised with Buffered BBox) ────────────────────────
     block_targets = all_targets[:, block_mask, :]        # (T, n_block, 3)
-    target_xy: Optional[np.ndarray] = None
-
+    target_bbox_xy: Optional[np.ndarray] = None          # Will now be an oriented bbox (4 corners)
+    target_particles_world: Optional[np.ndarray] = None
+    
     for t in range(T - 1, -1, -1):
         frame       = block_targets[t]
         finite_mask = np.isfinite(frame).all(axis=-1)
+        
         if finite_mask.any():
-            centroid_world = frame[finite_mask].mean(0) + world_offset
-            target_xy      = centroid_world[:2].astype(np.float32)
+            # Apply world_offset to keep the target cloud in the canonical system
+            target_cloud_world = frame[finite_mask] + world_offset
+            
+            # 1. Find centroid and center the particles to estimate yaw
+            target_centroid = target_cloud_world.mean(axis=0)
+            target_centered = target_cloud_world - target_centroid
+            
+            # Estimate yaw using the existing helper
+            target_yaw = _estimate_yaw_from_particles(target_centered, half_size=0.025)
+            
+            # 2. Rotate XY points to the block's local (axis-aligned) frame
+            xy_points = target_centered[:, :2]
+            c, s = np.cos(-target_yaw), np.sin(-target_yaw)
+            R_local = np.array([[c, -s], [s, c]])
+            local_xy = xy_points @ R_local.T
+            
+            # 3. Find the tightest bounds in the local frame
+            min_xy = local_xy.min(axis=0)
+            max_xy = local_xy.max(axis=0)
+            
+            # 4. Apply the buffer
+            buffer = 0.0075
+            min_xy_buffered = min_xy - buffer
+            max_xy_buffered = max_xy + buffer
+            
+            # 5. Define the 4 corners of the buffered box in the local frame
+            corners_local = np.array([
+                [min_xy_buffered[0], min_xy_buffered[1]], # Bottom-left
+                [max_xy_buffered[0], min_xy_buffered[1]], # Bottom-right
+                [max_xy_buffered[0], max_xy_buffered[1]], # Top-right
+                [min_xy_buffered[0], max_xy_buffered[1]]  # Top-left
+            ])
+            
+            # 6. Rotate corners back to world frame and add the centroid offset
+            c_inv, s_inv = np.cos(target_yaw), np.sin(target_yaw)
+            R_world = np.array([[c_inv, -s_inv], [s_inv, c_inv]])
+            corners_world = (corners_local @ R_world.T) + target_centroid[:2]
+            
+            # Output is now a 4x2 array representing the oriented bounding box polygon
+            target_bbox_xy = corners_world.astype(np.float32)
+            
+            # Store the full shifted point cloud
+            target_particles_world = target_cloud_world.astype(np.float32)
             break
+        
+    print("Target bbox XY:", target_bbox_xy)
+    print("Target particles world shape:", target_particles_world.shape)
+        
+    # return dict(
+    #     initial_block_pos       = initial_block_pos,
+    #     initial_block_quat      = initial_block_quat,
+    #     initial_gripper_xy      = initial_gripper_xy,
+    #     predicted_actions       = predicted_actions,
+    #     predicted_block_pos     = predicted_block_pos,
+    #     predicted_block_quat    = predicted_block_quat,
+    #     target_bbox_xy          = target_bbox_xy,          # Updated key
+    #     target_particles_world  = target_particles_world,  # Added key
+    #     tcp_positions           = tcp_positions_world,
+    #     block_positions         = block_positions_world,
+    #     hand_particles_world    = hand_particles_world,
+    #     hand_template_centered  = hand_template_centered,
+    # )
 
     return dict(
-        initial_block_pos    = initial_block_pos,
-        initial_block_quat   = initial_block_quat,
-        initial_gripper_xy   = initial_gripper_xy,
-        predicted_actions    = predicted_actions,
-        predicted_block_pos  = predicted_block_pos,
-        predicted_block_quat = predicted_block_quat,
-        target_xy            = target_xy,
-        tcp_positions        = tcp_positions_world,
-        block_positions      = block_positions_world,
+        initial_block_pos       = initial_block_pos,
+        initial_block_quat      = initial_block_quat,
+        initial_gripper_xy      = initial_gripper_xy,
+        predicted_actions       = predicted_actions,
+        predicted_block_pos     = predicted_block_pos,
+        predicted_block_quat    = predicted_block_quat,
+        target_bbox_xy          = target_bbox_xy,          
+        target_particles_world  = target_particles_world,  
+        tcp_positions           = tcp_positions_world,
+        block_positions         = block_positions_world,
+        hand_particles_world    = hand_particles_world,
+        hand_template_centered  = hand_template_centered,
+        # NEW: Return the block particle data
+        block_particles_world   = block_particles_world,
+        block_template_centered = block_template_centered,
     )
-
 
 # ─────────────────────────────────────────────────────────────────────────────
 # 2D conversion  (stub — to be implemented)

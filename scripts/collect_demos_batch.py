@@ -211,7 +211,7 @@ def _make_env_fn(record_dir, worker_seed, worker_idx, hx, hy):
                     pass
                 _set_gripper_xy(base, gx, gy)
 
-                raw_obs = self.env.get_obs()
+                raw_obs = base.get_obs()
                 obs     = self._sq(raw_obs)
                 info["init_block_yaw"]  = float(block_yaw)
                 info["init_face_index"] = int(face_index)
@@ -436,43 +436,49 @@ def run_cpu(args):
 
     print(f"CPU batch: {N} workers  target={args.num_demos} demos")
 
-    while completed < args.num_demos:
-        tcp_poses   = np.asarray(obs["extra"]["tcp_pose"],   dtype=np.float32).reshape(N, -1)
-        block_poses = np.asarray(obs["extra"]["block_pose"], dtype=np.float32).reshape(N, -1)
+    try:
+        while completed < args.num_demos:
+            tcp_poses   = np.asarray(obs["extra"]["tcp_pose"],   dtype=np.float32).reshape(N, -1)
+            block_poses = np.asarray(obs["extra"]["block_pose"], dtype=np.float32).reshape(N, -1)
 
-        actions = np.zeros((N, 2), dtype=np.float32)
-        for i in range(N):
-            q    = block_poses[i, 3:7]
-            bq   = np.array([q[1], q[2], q[3], q[0]])
-            byaw = float(Rotation.from_quat(bq).as_euler("xyz")[2])
-            actions[i] = policies[i].act(tcp_poses[i, :2], block_poses[i, :2], byaw)
+            actions = np.zeros((N, 2), dtype=np.float32)
+            for i in range(N):
+                q    = block_poses[i, 3:7]
+                bq   = np.array([q[1], q[2], q[3], q[0]])
+                byaw = float(Rotation.from_quat(bq).as_euler("xyz")[2])
+                actions[i] = policies[i].act(tcp_poses[i, :2], block_poses[i, :2], byaw)
 
-        obs, _, terminated, truncated, info = vec_env.step(actions)
-        total_steps  += N
-        alive_steps  += 1
+            obs, _, terminated, truncated, info = vec_env.step(actions)
+            total_steps  += N
+            alive_steps  += 1
 
-        dones = np.asarray(terminated, bool) | np.asarray(truncated, bool)
-        if dones.any():
-            yaws  = np.asarray(info.get("init_block_yaw",  np.zeros(N)), dtype=float)
-            faces = np.asarray(info.get("init_face_index", np.zeros(N)), dtype=int)
-            gxs   = np.asarray(info.get("init_gx", np.full(N, BCX + 0.12)), dtype=float)
-            gys   = np.asarray(info.get("init_gy", np.full(N, BCY)),         dtype=float)
+            dones = np.asarray(terminated, bool) | np.asarray(truncated, bool)
+            if dones.any():
+                yaws  = np.asarray(info.get("init_block_yaw",  np.zeros(N)), dtype=float)
+                faces = np.asarray(info.get("init_face_index", np.zeros(N)), dtype=int)
+                gxs   = np.asarray(info.get("init_gx", np.full(N, BCX + 0.12)), dtype=float)
+                gys   = np.asarray(info.get("init_gy", np.full(N, BCY)),         dtype=float)
 
-            for i in np.where(dones)[0]:
-                completed += 1
-                elapsed = time.time() - t0
-                print(f"  [{completed:>5d}/{args.num_demos}]  worker={i}"
-                      f"  steps={alive_steps[i]}"
-                      f"  fps={total_steps/elapsed:.0f}")
-                alive_steps[i] = 0
-                policies[i].reset(
-                    np.array([gxs[i], gys[i]]), block_xy,
-                    float(yaws[i]), hx, hy, rngs[i], initial_face=int(faces[i])
-                )
-            if completed >= args.num_demos:
-                break
+                for i in np.where(dones)[0]:
+                    completed += 1
+                    elapsed = time.time() - t0
+                    print(f"  [{completed:>5d}/{args.num_demos}]  worker={i}"
+                        f"  steps={alive_steps[i]}"
+                        f"  fps={total_steps/elapsed:.0f}")
+                    alive_steps[i] = 0
+                    policies[i].reset(
+                        np.array([gxs[i], gys[i]]), block_xy,
+                        float(yaws[i]), hx, hy, rngs[i], initial_face=int(faces[i])
+                    )
+                if completed >= args.num_demos:
+                    break
 
-    vec_env.close()
+    finally:
+        # THIS is the magic shield. It forces the zombie processes to die 
+        # and releases the HDF5 locks even if the script crashes.
+        print("\nCleaning up worker processes and flushing files...")
+        vec_env.close()
+        
     elapsed = time.time() - t0
     print(f"\nDone. {completed} demos  {elapsed:.1f}s  ({total_steps/elapsed:.0f} steps/s)")
     print(f"Saved to: {args.record_dir}")
@@ -484,12 +490,12 @@ def run_cpu(args):
 
 def parse_args():
     p = argparse.ArgumentParser(description="Batched face-push demo collection.")
-    p.add_argument("--num_envs",          type=int, default=16)
-    p.add_argument("--num_demos",         type=int, default=1000)
-    p.add_argument("--max_episode_steps", type=int, default=400)
+    p.add_argument("--num_envs",          type=int, default=10)
+    p.add_argument("--num_demos",         type=int, default=10000)
+    p.add_argument("--max_episode_steps", type=int, default=100)
     p.add_argument("--seed",              type=int, default=None)
-    p.add_argument("--record_dir",        type=str, default="demos/PushBoundary/batch")
-    p.add_argument("--backend",           type=str, default="gpu", choices=["cpu", "gpu"])
+    p.add_argument("--record_dir",        type=str, default="/data/user_data/mbronars/packages/Planning_wrapper/demos/batch_large_retry3")
+    p.add_argument("--backend",           type=str, default="cpu", choices=["cpu", "gpu"])
     return p.parse_args()
 
 

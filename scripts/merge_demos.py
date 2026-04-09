@@ -56,22 +56,25 @@ def merge(record_dir: str, out_path: str) -> None:
                     worker_meta = json.load(f)
                 worker_episodes = worker_meta.get("episodes", [])
 
-            with h5py.File(h5_path, "r") as src:
-                traj_keys = sorted(src.keys(), key=lambda k: int(k.split("_")[1]))
-                for local_idx, traj_key in enumerate(traj_keys):
-                    new_key = f"traj_{demo_idx}"
-                    src.copy(traj_key, dst, name=new_key)
+            try:
+                with h5py.File(h5_path, "r") as src:
+                    traj_keys = sorted(src.keys(), key=lambda k: int(k.split("_")[1]))
+                    for local_idx, traj_key in enumerate(traj_keys):
+                        new_key = f"traj_{demo_idx}"
+                        src.copy(traj_key, dst, name=new_key)
 
-                    if local_idx < len(worker_episodes):
-                        ep = dict(worker_episodes[local_idx])
-                        ep["episode_id"]    = demo_idx
-                        ep["source_worker"] = worker_dir.name
-                        ep["source_traj"]   = traj_key
-                        all_episodes.append(ep)
+                        if local_idx < len(worker_episodes):
+                            ep = dict(worker_episodes[local_idx])
+                            ep["episode_id"]    = demo_idx
+                            ep["source_worker"] = worker_dir.name
+                            ep["source_traj"]   = traj_key
+                            all_episodes.append(ep)
 
-                    demo_idx += 1
+                        demo_idx += 1
 
-            print(f"  {worker_dir.name}: {len(traj_keys)} demos  (total={demo_idx})")
+                print(f"  {worker_dir.name}: {len(traj_keys)} demos  (total={demo_idx})")
+            except Exception as e:
+                print(f"  [skip] {worker_dir.name} — corrupted or unreadable H5 ({e})")
 
     merged_json = {
         "env_info": {"source_dir": str(src_dir)},
