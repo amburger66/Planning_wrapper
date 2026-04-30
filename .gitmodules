@@ -5,3 +5,4 @@
 [submodule "submodules/mctd"]
 	path = submodules/mctd
 	url = git@github.com:amburger66/mctd.git
+	branch = main
