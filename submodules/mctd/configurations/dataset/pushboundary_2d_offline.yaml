@@ -1,0 +1,18 @@
+defaults:
+  - pushboundary_offline
+
+# 2D-only: [tcp_x, tcp_y, block_x, block_y] and [next_tcp_x, next_tcp_y]
+dataset: "pushboundary_2d_offline"
+observation_shape: [4]
+action_dim: 2
+goal_dim: 2
+
+# Slice indices into full 18D state and 9D action
+state_indices: [0, 1, 9, 10]
+action_indices: [0, 1]
+
+# Statistics for diffusion normalization (computed from sliced 991-frame segments)
+observation_mean: [-0.13577485, 0.0012194117, -0.13562192, 0.0026360064]
+observation_std:  [0.09517646, 0.13035362, 0.079566696, 0.11983518]
+action_mean:      [-0.13578489, 0.0012268482]
+action_std:       [0.09516594, 0.13028038]

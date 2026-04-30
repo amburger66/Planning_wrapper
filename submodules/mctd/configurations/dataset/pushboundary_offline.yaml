@@ -1,0 +1,30 @@
+defaults:
+  - base_dataset
+
+# Dataset identity / lengths
+# env_id: legacy string carried into DiffusionForcingPlanning / logging_utils (OGBench-style viz scaling).
+# This is not a registered PushBoundary gym env; offline data come from states_path/actions_path below.
+env_id: "pointmaze-medium-v0"
+dataset: "pushboundary_offline"
+gamma: 1.0
+episode_len: 990
+
+# Dimensions
+observation_shape: [18]
+action_dim: 9
+goal_dim: 2
+
+# Statistics for diffusion normalization
+observation_mean: [-0.13577311, 0.0012194166, 0.02397055, 0.99983644, -0.04145856, 0.016871676, -0.041626304, -0.99987292, 0.0099161016, -0.13561337, 0.0026359956, 0.025030157, -0.030462844, -0.003676408, -0.0032037569, 0.0035815742, -0.02917714, 0.00012116947]
+observation_std:  [0.09517318, 0.1303497, 0.0008684127, 0.00104779599, 0.0079617538, 0.007561717, 0.0079968013, 0.00090358726, 0.0037053237, 0.07956597, 0.119831465, 0.00019188061, 0.70588207, 0.70544416, 0.05572959, 0.7064304, 0.7071464, 0.0059649067]
+action_mean:      [-0.13578309, 0.00122685, 0.02397647, 0.9998363, -0.04146107, 0.01687895, -0.04162893, -0.9998728, 0.00992129]
+action_std:       [0.09516268, 0.13027658, 0.00084799, 0.00104835, 0.00796447, 0.00757112, 0.00799953, 0.00090373, 0.00370892]
+
+# Reward is not used for `df_planning` by default, but the config requires fields.
+reward_mean: 0.0
+reward_std: 1.0
+
+# Paths to offline trajectories (repo-relative)
+states_path: demos/PushBoundary/states.npy
+actions_path: demos/PushBoundary/actions.npy
+

@@ -1,0 +1,10 @@
+{"mode": "guided", "sample_idx": 0, "time_sec": 0.46469003055244684, "guidance_scale": 10.0, "horizon": 90, "frame_stack": 10, "obs_dim": 14, "device": "cpu"}
+{"mode": "guided", "sample_idx": 1, "time_sec": 0.5941295241937041, "guidance_scale": 10.0, "horizon": 90, "frame_stack": 10, "obs_dim": 14, "device": "cpu"}
+{"mode": "guided", "sample_idx": 2, "time_sec": 0.5481575960293412, "guidance_scale": 10.0, "horizon": 90, "frame_stack": 10, "obs_dim": 14, "device": "cpu"}
+{"mode": "guided", "sample_idx": 3, "time_sec": 0.48122996650636196, "guidance_scale": 10.0, "horizon": 90, "frame_stack": 10, "obs_dim": 14, "device": "cpu"}
+{"mode": "guided", "sample_idx": 4, "time_sec": 0.4838048769161105, "guidance_scale": 10.0, "horizon": 90, "frame_stack": 10, "obs_dim": 14, "device": "cpu"}
+{"mode": "guided", "sample_idx": 5, "time_sec": 0.47264776565134525, "guidance_scale": 10.0, "horizon": 90, "frame_stack": 10, "obs_dim": 14, "device": "cpu"}
+{"mode": "guided", "sample_idx": 6, "time_sec": 0.5861360505223274, "guidance_scale": 10.0, "horizon": 90, "frame_stack": 10, "obs_dim": 14, "device": "cpu"}
+{"mode": "guided", "sample_idx": 7, "time_sec": 0.47130499593913555, "guidance_scale": 10.0, "horizon": 90, "frame_stack": 10, "obs_dim": 14, "device": "cpu"}
+{"mode": "guided", "sample_idx": 8, "time_sec": 0.5092082396149635, "guidance_scale": 10.0, "horizon": 90, "frame_stack": 10, "obs_dim": 14, "device": "cpu"}
+{"mode": "guided", "sample_idx": 9, "time_sec": 0.4741482762619853, "guidance_scale": 10.0, "horizon": 90, "frame_stack": 10, "obs_dim": 14, "device": "cpu"}

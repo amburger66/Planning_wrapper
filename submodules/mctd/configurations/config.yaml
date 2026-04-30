@@ -1,0 +1,20 @@
+# configuration parsing starts here
+defaults:
+  - experiment: exp_planning
+  - dataset: pushblock_offline
+  - algorithm: df_planning
+  - cluster: null # optional, cluster yaml file name in configurations/cluster folder. Leave null for local compute
+
+debug: false # global debug flag will be passed into configuration of experiment, dataset and algorithm
+jump: 1 # global jump flag will be passed into configuration of experiment, dataset and algorithm
+
+wandb:
+  group: r-pad-org # wandb group name
+  entity: r-pad # wandb account name / organization name — set to your wandb username [fixme]
+  project: mctd # wandb project name; if not provided, defaults to root folder name
+  mode: online # set wandb logging to online, offline or dryrun
+
+hostname: null # hostname to run the experiment on
+gpu_id: null # gpu id to run the experiment on
+resume: null # wandb run id to resume logging and loading checkpoint from
+load: null # wanmdb run id containing checkpoint or a path to a checkpoint file

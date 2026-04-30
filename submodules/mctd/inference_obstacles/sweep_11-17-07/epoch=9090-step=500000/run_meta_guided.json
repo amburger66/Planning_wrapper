@@ -1,0 +1,9 @@
+{
+  "checkpoint": "/workspace/checkpoints/11-17-07/checkpoints/epoch=9090-step=500000.ckpt",
+  "mode": "guided",
+  "guidance_scales": "0.1,0.5,1,2,5,10",
+  "seed": 0,
+  "num_samples": 20,
+  "output_dir": "/workspace/submodules/mctd/inference_obstacles/sweep_11-17-07/epoch=9090-step=500000",
+  "docker_image": "fmctd:0.1"
+}

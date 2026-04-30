@@ -1,0 +1,48 @@
+{
+  "by_mode": {
+    "guided": {
+      "count": 120,
+      "max_sec": 0.5622740453109145,
+      "mean_sec": 0.4703615254101654,
+      "min_sec": 0.4512596307322383
+    }
+  },
+  "by_mode_and_guidance_scale": {
+    "guided/guidance_scale=0.1": {
+      "count": 20,
+      "max_sec": 0.5592341599985957,
+      "mean_sec": 0.48198155844584106,
+      "min_sec": 0.4541031215339899
+    },
+    "guided/guidance_scale=0.5": {
+      "count": 20,
+      "max_sec": 0.5498437201604247,
+      "mean_sec": 0.4693188598845154,
+      "min_sec": 0.45259266067296267
+    },
+    "guided/guidance_scale=1.0": {
+      "count": 20,
+      "max_sec": 0.49229952599853277,
+      "mean_sec": 0.4657623358536512,
+      "min_sec": 0.45698603242635727
+    },
+    "guided/guidance_scale=10.0": {
+      "count": 20,
+      "max_sec": 0.5622740453109145,
+      "mean_sec": 0.4685580644290894,
+      "min_sec": 0.45393733866512775
+    },
+    "guided/guidance_scale=2.0": {
+      "count": 20,
+      "max_sec": 0.4983042012900114,
+      "mean_sec": 0.46605456378310917,
+      "min_sec": 0.4564107060432434
+    },
+    "guided/guidance_scale=5.0": {
+      "count": 20,
+      "max_sec": 0.5593380406498909,
+      "mean_sec": 0.4704937700647861,
+      "min_sec": 0.4512596307322383
+    }
+  }
+}

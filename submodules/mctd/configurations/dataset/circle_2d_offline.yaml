@@ -1,0 +1,31 @@
+defaults:
+  - base_dataset
+
+# Padded NPZ circle demos: states, actions, valid_lengths (repo-relative npz_path).
+dataset: "circle_2d_offline"
+# See pushboundary_offline.yaml: placeholder env_id for shared planning code paths, not a real env.
+env_id: "pointmaze-medium-v0"
+gamma: 1.0
+
+# Must satisfy (episode_len % frame_stack == 0) for df_planning (frame_stack=10).
+# Set to min(T_max, your NPZ time dim) - 1, rounded down to a multiple of 10.
+episode_len: 990
+
+observation_shape: [4]
+action_dim: 2
+goal_dim: 2
+
+state_indices: [0, 1, 9, 10]
+action_indices: [0, 1]
+
+npz_path: demos/circle_demos_full.npz
+
+# Replace with output from (repo root): python scripts/compute_circle_npz_stats.py --npz demos/circle_demos_full.npz
+# For circular block in training/inference GIFs, set algorithm.viz_block_shape=circle in your Hydra overrides.
+observation_mean: [-0.13465686, -0.0050588251, -0.1353014, -0.0045263215]
+observation_std:  [0.092837125, 0.12293714, 0.082092925, 0.11206312]
+action_mean:      [-0.13466705, -0.0050517617]
+action_std:       [0.092896669, 0.12290183]
+
+reward_mean: 0.0
+reward_std: 1.0

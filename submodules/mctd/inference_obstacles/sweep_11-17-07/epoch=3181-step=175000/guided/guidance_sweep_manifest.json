@@ -1,0 +1,44 @@
+{
+  "mode": "guided_guidance_sweep",
+  "seed": 0,
+  "reset_seed_between_guidance_scales": true,
+  "num_samples_requested": 20,
+  "runs": [
+    {
+      "guidance_scale": 0.1,
+      "relative_dir": "guided/scale_0p1",
+      "num_trajectories": 20,
+      "trajectory_npy_glob": "trajectory_*.npy"
+    },
+    {
+      "guidance_scale": 0.5,
+      "relative_dir": "guided/scale_0p5",
+      "num_trajectories": 20,
+      "trajectory_npy_glob": "trajectory_*.npy"
+    },
+    {
+      "guidance_scale": 1.0,
+      "relative_dir": "guided/scale_1",
+      "num_trajectories": 20,
+      "trajectory_npy_glob": "trajectory_*.npy"
+    },
+    {
+      "guidance_scale": 2.0,
+      "relative_dir": "guided/scale_2",
+      "num_trajectories": 20,
+      "trajectory_npy_glob": "trajectory_*.npy"
+    },
+    {
+      "guidance_scale": 5.0,
+      "relative_dir": "guided/scale_5",
+      "num_trajectories": 20,
+      "trajectory_npy_glob": "trajectory_*.npy"
+    },
+    {
+      "guidance_scale": 10.0,
+      "relative_dir": "guided/scale_10",
+      "num_trajectories": 20,
+      "trajectory_npy_glob": "trajectory_*.npy"
+    }
+  ]
+}

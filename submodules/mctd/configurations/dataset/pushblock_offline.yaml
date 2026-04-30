@@ -1,0 +1,31 @@
+defaults:
+  - base_dataset
+
+dataset: "pushblock_offline"
+# Placeholder env_id for shared planning code paths, not a real registered env.
+env_id: "pointmaze-medium-v0"
+gamma: 1.0
+
+# n_frames = episode_len + 1 must satisfy (n_frames - 1) % frame_stack == 0.
+# With frame_stack=1 (pass algorithm.frame_stack=1), any episode_len works.
+# T_max = 50 (NPZ time dim) → n_frames <= 50 → episode_len <= 49.
+# min(valid_lengths) = 43 in this dataset; with the last-frame padding fix in
+# circle_padded_offline.py, episode_len up to 49 is now safe.
+episode_len: 90
+
+# Full 18D state and 9D action — no state_indices / action_indices slicing.
+observation_shape: [14]
+action_dim: 2
+goal_dim: 2
+
+# npz_path: /data/user_data/mbronars/packages/Planning_wrapper/demos/batch_200k_04_16_obstacles4/all_demos_4obstacles_no_stationary.npz
+npz_path: demos/all_demos_4obstacles_no_stationary.npz
+
+observation_mean: [-0.1297, -0.0002, -0.1297, -0.0002, 0.0096, -0.0065, -0.1297, -0.0002, -0.1297, -0.0002, -0.1297, -0.0002, -0.1297, -0.0002]
+observation_std: [0.0658, 0.0637, 0.0658, 0.0637, 0.7063, 0.7078, 0.0658, 0.0637, 0.0658, 0.0637, 0.0658, 0.0637, 0.0658, 0.0637]
+
+action_mean: [-0.1297, -0.0002]
+action_std: [0.0658, 0.0637]
+
+reward_mean: 0.0
+reward_std: 1.0

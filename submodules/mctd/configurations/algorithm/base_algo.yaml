@@ -1,0 +1,4 @@
+# This will be passed as the cfg to Algo.__init__(cfg) of your algorithm class
+
+debug: ${debug} # inherited from configurations/config.yaml
+jump: ${dataset.jump} # inherited from configurations/config.yaml

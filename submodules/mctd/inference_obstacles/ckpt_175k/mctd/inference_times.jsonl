@@ -1,0 +1,1 @@
+{"mode": "mctd", "sample_idx": 0, "time_sec": 794.8261686749756, "horizon": 90, "frame_stack": 10, "obs_dim": 14, "device": "cuda:0", "max_search_num": 100, "num_denoising_steps": null, "mctd_guidance_scales": "0,0.1,0.5,1,2", "warp_threshold": 0.015, "goal_threshold": 0.0175}
